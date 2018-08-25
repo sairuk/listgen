@@ -37,6 +37,8 @@ function switchOutput($pstQueue) {
           	require(DOCROOT.'/outputs/filezilla.php');break;
         case wget:
           	require(DOCROOT.'/outputs/wget.php');break;
+        case lftp:
+          	require(DOCROOT.'/outputs/lftp.php');break;
         case msbat:
           	require(DOCROOT.'/outputs/msbat.php');break;
         case CRCmsbat:
@@ -150,121 +152,120 @@ function genFunction($inType,$skiplines,$fTypeTitle) {
 	$sha1len = strlen("58563e3ccb51bd9d8362aa17c23743bb5a593c3b");
 	
 	$build = "Current";	
-    $i = "0";
+  $i = "0";
     
-    # Clean up the name of the file
+   # Clean up the name of the file
 	cleanSessionID($outfile);
 	$name = $csIDstr;
 	
-    if (file_exists($fixfile) && is_readable ($fixfile)) {
-    	$outfile = UPLOADPATH .'/'. $sessionID .'/'. $outfile;
-    	print $fTypeTitle."<br />";
-    	
-    	# File write header, open file for writing
-		@unlink($outfile);
-		$xmlhndl = @fopen($outfile,"w");
-        writeout_header();
-        # File write content, open file for append
-		$xmlhndl = @fopen($outfile,"a");
-		
-        #$lines = file($fixfile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-		$handle = @fopen($fixfile, "r");
-		if ($handle) {
-			while(!feof($handle)) {
-			$line = fgets($handle);
-	        $line = trim($line,"\r\n");
-	        $i++;
-		
-        	# Custom Items Start Here
-        	switch ($inType) {
-        		# Cowering's Goodtools Have/Miss Text Format
-				case goodtxt:
-				# Get version number of set for $build
-				if (preg_match('/ROMS \(V.*\)/',$line)) {
-					$stringlen = strrpos($line,")");
-					$stringpos = strpos($line,"(")+1;
-					$build = substr("$line",$stringpos,$stringlen-$stringpos);
-				}
-					if ( $i > $skiplines ) {
-          			build_itemArray("0","1",$line,"","",$ext,$line,"","","","","","",$build);
-					} 
-          		break;
-        		# CLRMame Pro XML Format, full parse
-          		case cmproxml:
-          			$myline = ltrim($line);
-          			if (( $i > $skiplines )) {
-          				# Pull out the game names
-          				if (preg_match("/^\<game/",$myline)) {
-          				preg_match( "/\"(.*?)\"/", $line, $gamename );
-						$gamename = preg_replace( "/\"/",'',$gamename[0] );
-						} elseif (preg_match("/^\<description/",$myline)) {
-						# Pull out the game descriptions
-						preg_match( "/\"(.*?)\"/", $line, $gamedesc );
-						$gamedesc = preg_replace( "/\"/",'',$gamedesc[0] );
-          				} elseif (preg_match("/^\<manufacturer/",$myline)) {
-          				# Pull out the game manufacturer
-          				preg_match( "/\"(.*?)\"/", $line, $gamemanu );
-						$gamemanu = preg_replace( "/\"/",'',$gamemanu[0] );
-          				} elseif (preg_match("/^\<rom/",$myline)) {
-                        # Pull out the game rom name, size, crc, md5 and sha1
-          				preg_match_all( "/\"(.*?)\"/", $line, $gamerom );
-  						$gameromdet = preg_replace( "/\"/",'',$gamerom[0] );
-						$gameromname = preg_replace( "/\"/",'',$gameromdet[0] );
-  						$gameromsize = preg_replace( "/\"/",'',$gameromdet[1] );
-						$gameromcrc = preg_replace( "/\"/",'',$gameromdet[2] );
-							if (strlen($gameromdet[3]) > $md5len ) {
-								$gamerommd5 = "";
-								$gameromsha1 = preg_replace( "/\"/",'',$gameromdet[3] );
-							} else {
-								$gamerommd5 = preg_replace( "/\"/",'',$gameromdet[3] );
-								$gameromsha1 = preg_replace( "/\"/",'',$gameromdet[4] );
-							}
-          				}
-                        # If we match the end of the block, call the build_itemArray function          				
-						if (preg_match("/^\<\/game/",$myline)) {
-							build_itemArray("0","1",$gamename,"","",$ext,$gamedesc,$gamemanu,$gameromname,$gameromsize,$gameromcrc,$gamerommd5,$gameromsha1,$build);
-						}
-          			} 
-          			break;
-        		# CLRMame Pro DAT Format
-          		case cmprodat:
-          			$myline = ltrim($line);
-          			if (( $i > $skiplines ) && (preg_match("/^name/",$myline))) {	
-          				# Pull out the archive names
-						preg_match( "/\"(.*?)\"/", $line, $gamename );
-						$line = preg_replace( "/\"/",'',$gamename[0] );
-          				build_itemArray("0","1",$line,$line,$line,$ext,$line,$line,$line,"","","","",$build);
-					}
-          		break;
-        		# Rommanger Dat Format
-          		case rommanager:
-					if ( $i > $skiplines ) {
-						if (preg_match("/^�/",$line)) {
-						# �parent name�parent description�game name�game description�rom name�rom crc�rom size�romof name�merge name�
-						$line = explode('�',$line);
-						build_itemArray("0","1",$line[1],$line[0],$line[7],$ext,$line[4],"",$line[5],$line[7],$line[6],"","",$build);
-						}
-					}
-          		break;
-          		# MAME XML Formal
-				case mamexml:
-          			read_mamexml($skiplines);
-          		break;
-          		# Generic
-				case generic:
-          			build_itemArray("1","0",$line,"","",$ext,"","","","","","","",$build);
-          		break;
-				default:
-           		echo "Nothing to do here either jim";
-        	}
+  if (file_exists($fixfile) && is_readable ($fixfile)) {
+    $outfile = UPLOADPATH .'/'. $sessionID .'/'. $outfile;
+    print $fTypeTitle."<br />";
+    
+    # File write header, open file for writing
+    @unlink($outfile);
+    $xmlhndl = @fopen($outfile,"w");
+    writeout_header();
+    # File write content, open file for append
+    $xmlhndl = @fopen($outfile,"a");
   
-		}
-	fclose($handle);
-	}
-		
-		# File write footer, open file for append
-		#$xmlhndl = @fopen($outfile,"a");		
-        writeout_footer();
+    #$lines = file($fixfile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $handle = @fopen($fixfile, "r");
+    if ($handle) {
+      while(!feof($handle)) {
+        $line = fgets($handle);
+        $line = trim($line,"\r\n");
+        $i++;
+    
+        # Custom Items Start Here
+        switch ($inType) {
+          # Cowering's Goodtools Have/Miss Text Format
+          case goodtxt:
+            # Get version number of set for $build
+            if (preg_match('/ROMS \(V.*\)/',$line)) {
+              $stringlen = strrpos($line,")");
+              $stringpos = strpos($line,"(")+1;
+              $build = substr("$line",$stringpos,$stringlen-$stringpos);
+            }
+            if ( $i > $skiplines ) {
+              build_itemArray("0","1",$line,"","",$ext,$line,"","","","","","",$build);
+            } 
+            break;
+            # CLRMame Pro XML Format, full parse
+            case cmproxml:
+              $myline = ltrim($line);
+              if (( $i > $skiplines )) {
+                # Pull out the game names
+                if (preg_match("/^\<game/",$myline)) {
+                  preg_match( "/\"(.*?)\"/", $line, $gamename );
+                  $gamename = preg_replace( "/\"/",'',$gamename[0] );
+                } elseif (preg_match("/^\<description/",$myline)) {
+                  # Pull out the game descriptions
+                  preg_match( "/\"(.*?)\"/", $line, $gamedesc );
+                  $gamedesc = preg_replace( "/\"/",'',$gamedesc[0] );
+                } elseif (preg_match("/^\<manufacturer/",$myline)) {
+                  # Pull out the game manufacturer
+                  preg_match( "/\"(.*?)\"/", $line, $gamemanu );
+                  $gamemanu = preg_replace( "/\"/",'',$gamemanu[0] );
+                } elseif (preg_match("/^\<rom/",$myline)) {
+                  # Pull out the game rom name, size, crc, md5 and sha1
+                  preg_match_all( "/\"(.*?)\"/", $line, $gamerom );
+                  $gameromdet = preg_replace( "/\"/",'',$gamerom[0] );
+                  $gameromname = preg_replace( "/\"/",'',$gameromdet[0] );
+                  $gameromsize = preg_replace( "/\"/",'',$gameromdet[1] );
+                  $gameromcrc = preg_replace( "/\"/",'',$gameromdet[2] );
+                if (strlen($gameromdet[3]) > $md5len ) {
+                  $gamerommd5 = "";
+                  $gameromsha1 = preg_replace( "/\"/",'',$gameromdet[3] );
+                } else {
+                  $gamerommd5 = preg_replace( "/\"/",'',$gameromdet[3] );
+                  $gameromsha1 = preg_replace( "/\"/",'',$gameromdet[4] );
+                }
+              }
+              # If we match the end of the block, call the build_itemArray function          				
+              if (preg_match("/^\<\/game/",$myline)) {
+                build_itemArray("0","1",$gamename,"","",$ext,$gamedesc,$gamemanu,$gameromname,$gameromsize,$gameromcrc,$gamerommd5,$gameromsha1,$build);
+              }} 
+              break;
+            # CLRMame Pro DAT Format
+            case cmprodat:
+              $myline = ltrim($line);
+              if (( $i > $skiplines ) && (preg_match("/^name/",$myline))) {	
+                # Pull out the archive names
+                preg_match( "/\"(.*?)\"/", $line, $gamename );
+                $line = preg_replace( "/\"/",'',$gamename[0] );
+                build_itemArray("0","1",$line,$line,$line,$ext,$line,$line,$line,"","","","",$build);
+              }
+              break;
+            # Rommanger Dat Format
+            case rommanager:
+              if ( $i > $skiplines ) {
+                if (preg_match("/^�/",$line)) {
+                  # �parent name�parent description�game name�game description�rom name�rom crc�rom size�romof name�merge name�
+                  $line = explode('�',$line);
+                  build_itemArray("0","1",$line[1],$line[0],$line[7],$ext,$line[4],"",$line[5],$line[7],$line[6],"","",$build);
+                }
+              }
+              break;
+            # MAME XML Formal
+            case mamexml:
+              read_mamexml($skiplines);
+              break;
+            # Generic
+            case generic:
+              build_itemArray("1","0",$line,"","",$ext,"","","","","","","",$build);
+              break;
+            default:
+              echo "Nothing to do here either jim";
+            }
+  
+          }
+        fclose($handle);
+      }
+  
+      # File write footer, open file for append
+      #$xmlhndl = @fopen($outfile,"a");		
+      writeout_footer();
     } 
 
     if (is_file($fixfile)) { 
@@ -363,7 +364,7 @@ function create_link($zipfile) {
 		cleanSessionID($zipfile);
 		$hreftitle = basename($csIDstr);
 		$resultsfile = UPLOADPATH .'/'. $sessionID .'/'.basename($zipfile);
-		chmod($resultsfile, 0755);
+		chmod($resultsfile, 0644);
 		echo (' 
 				<tr><td>
 					Results: <a href="'.$resultsfile.'">'.$hreftitle.'</a> - '.$fsize.'<br /> 

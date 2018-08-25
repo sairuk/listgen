@@ -59,6 +59,7 @@ include('includes/counter.php');
 										 <optgroup label="File Transfer Queues">
 										 <option value="filezilla">&#149; FileZilla Filter</option>
 										 <option value="wget">&#149; wget queue</option>
+										 <option value="lftp">&#149; lftp queue</option>
 										 </optgroup>
 										 <optgroup label="Copy Scripts">									 
 										 <option value="msbat">&#149; MSDOS batch</option>

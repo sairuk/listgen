@@ -2,7 +2,7 @@
 
 # Project information
 $projName = "listgen";
-$projVer = "v0.7";
+$projVer = "v0.7a";
 $projAuth = "sairuk";
 $maxviewbytes = "1048576";
 
